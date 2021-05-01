@@ -81,7 +81,7 @@
             <td>{{profile}}</td>
             <td>{{profile.first_name}}</td>
             <td>{{profile.last_name}}</td>
-            <td><input type="checkbox" name="send_requests" values="{{profile.id}}"></td>
+            <td><input type="checkbox" name="send_requests" value="{{profile.id}}"></td>
         </tr>
         {% endfor %}
     </table>
@@ -109,7 +109,7 @@
             <td>{{rr.sender}}</td>
             <td>{{rr.sender.first_name}}</td>
             <td>{{rr.sender.last_name}}</td>
-            <td><input type="checkbox" name="receive_requests" values="{{rr.id}}"></td>
+            <td><input type="checkbox" name="receive_requests" value="{{rr.id}}"></td>
         </tr>
         {% endfor %}
     </table>
