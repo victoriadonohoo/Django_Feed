@@ -84,6 +84,13 @@ def friendsfeed(request):
 
     zipped_list = zip(posts, comment_count_list, like_count_list)
 
+    if request.method == 'POST' and request.POST.get("like"):
+        post_to_like = request.POST.get("like")
+        like_already_exists = like.objects.filter(post_id=post_to_like, username=request.user)
+        if not like_already_exists():
+            Like.objects.create(post_id=post_to_like, username=request.user)
+            return redirect("FeedApp:friendsfeed")
+
     context = {'posts': posts, 'zipped_list': zipped_list}
     return render(request, 'FeedApp/friendsfeed.html', context)
 
@@ -99,4 +106,44 @@ def comments(request, post_id):
     context = {'post': post, 'comments': comments}
     return render(request, 'FeedApp/comments.html', context)
     
+@login_required
+def friends(request):
+    #get_the_admin_profile and user profile to create the first relationship 
+    admin_profile = Profile.objects.get(user=1)
+    user_profile = Profile.objects.get(user=request.user)
 
+    # to get my friends
+    user_friends = user_profile.friends.all()
+    user_friends_profiles = Profile.objects.filter(user__in=user_friends)
+
+    user_relationships = Relationship.objects.filter(sender=user_profile)
+    request_sent_profiles = user_relationships.values('receiver')
+
+    all_profiles = Profile.objects.exclude(user=request.user).exclude(id__in=user_friends_profiles).exclude(id__in=request_sent_profiles)
+
+    request_received_profiles = Relationship.objects.filter(receiver=user_profile, status='sent')
+
+    if not user_relationships.exists():
+        Relationship.objects.create(sender=user_profile, receiver=admin_profile, status='sent')
+
+    if request.method == 'POST' and request.POST.get("send_requests"):
+        receivers = request.POST.getlist("send_requests")
+        for receiver in receivers:
+            receiver_profile = Profile.objects.get(id=receiver)
+            Relationship.objects.create(sender=user_profile, receiver=receiver_profile,  status='sent')
+        return redirect('FeedApp:friends')
+
+    if request.method == 'POST' and request.POST.get("receive_requests"):
+        senders = request.POST.getlist("friend_requests")
+        for sender in senders:
+            Relationship.objects.filter(id=sender).update(status='accepted')
+            relationship_obj = Relationship.objects.get(id=sender)
+            user_profile.friends.add(relationship_obj.sender.user)
+            relationship_obj.sender.friends.add(request.user)
+
+    context = {'user_friends_profiles': user_friends_profiles, 'user_relationships': user_relationships,
+                'all_profiles': all_profiles, 'request_received_profiles': request_received_profiles}
+
+    return render(request, 'FeedApp/friends.html', context)
+    
+    
